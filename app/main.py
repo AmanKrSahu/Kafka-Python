@@ -6,8 +6,16 @@ def create_message(msg_len, corr_id):
 
 # Handle the client connection
 def handle_client(client):
-    client.recv(1024)
-    client.sendall(create_message(0,7))
+    # Receive the request from the client
+    req = client.recv(1024)
+
+    # Extract the Correlation ID from the request
+    corrId = int.from_bytes(req[8:12], byteorder="big")
+
+    # Send the response with the extracted correlation ID
+    client.sendall(create_message(0,corrId))
+
+    # Close the connection
     client.close()
 
 def main():
@@ -24,3 +32,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
