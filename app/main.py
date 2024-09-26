@@ -7,7 +7,7 @@ def create_message(msg_len, corr_id):
 # Handle the client connection
 def handle_client(client):
     client.recv(1024)
-    client.sendall(create_message(7))
+    client.sendall(create_message(0,7))
     client.close()
 
 def main():
