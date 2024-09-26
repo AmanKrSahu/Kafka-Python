@@ -1,16 +1,30 @@
 import socket  # noqa: F401
 
-# Error code for unsupported version
+# Common error codes
 UNSUPPORTED_VERSION = 35
+NO_ERROR = 0
+
+# API key for APIVersions request
+API_VERSIONS_KEY = 18
+MAX_API_VERSION = 4  # Max version for ApiKey 18
 
 # Create a response for the client
-def create_message(corr_id, error_code=None):
+def create_message(corr_id, error_code=NO_ERROR, api_key_versions=None):
     # Response to be sent to the client
     message = corr_id.to_bytes(4, byteorder="big", signed=True)
 
-    # Check if error code exits
-    if error_code is not None:
-        message += error_code.to_bytes(2, byteorder="big", signed=True)
+    message += error_code.to_bytes(2, byteorder="big", signed=True)
+
+    # Add API_VERSIONS key info if api_key_versions is provided
+    if api_key_versions is not None:
+        # Number of API versions (1 entry for API_VERSIONS key)
+        message += len(api_key_versions).to_bytes(4, byteorder="big", signed=False)
+        
+        # For each API key, append its information
+        for api_key, (min_version, max_version) in api_key_versions.items():
+            message += api_key.to_bytes(2, byteorder="big", signed=False)  # API Key
+            message += min_version.to_bytes(2, byteorder="big", signed=False)  # Min Version
+            message += max_version.to_bytes(2, byteorder="big", signed=False)  # Max Version
     
     # Find the length of the message
     message_len = len(message).to_bytes(4, byteorder="big", signed=False)
@@ -33,8 +47,9 @@ def handle_client(client):
         # Respond with UNSUPPORTED_VERSION error code
         client.sendall(create_message(corr_id, UNSUPPORTED_VERSION))
     else:
-        # Normal response (no error, just echo the correlation ID)
-        client.sendall(create_message(corr_id))
+        # Normal response with API_VERSIONS key information
+        api_key_versions = {API_VERSIONS_KEY: (0, MAX_API_VERSION)}  # API Key 18, MinVersion 0, MaxVersion 4
+        client.sendall(create_message(corr_id, NO_ERROR, api_key_versions))
 
     # Close the connection
     client.close()
